@@ -42,8 +42,8 @@ describe("Gilded Rose Golden Master", () => {
       gildedRose.updateQuality();
     }
 
-    const gmPath = path.join(__dirname, "golden_output.txt");
-    const goldenOutput = readFileSync(gmPath, "utf8");
+    const goldenMasterPath = path.join(__dirname, "golden_output.txt");
+    const goldenOutput = readFileSync(goldenMasterPath, "utf8");
     expect(output).toEqual(goldenOutput);
   });
 });
