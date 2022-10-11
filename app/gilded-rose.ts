@@ -22,66 +22,70 @@ export class GildedRose {
   private readonly SULFURAS = "Sulfuras, Hand of Ragnaros";
 
   private readonly MAX_QUALITY = 50;
-  private readonly MAX_DAYS_TO_CONCERT = 10;
-  private readonly MAX_DAYS_TO_CONCERT_2 = 5;
+  private readonly MIN_QUALITY = 0;
+  private readonly TEN_DAYS_TO_CONCERT = 10;
+  private readonly FIVE_DAYS_TO_CONCERT = 5;
 
-  isQualityBelowThreshold = (index: number): boolean =>
-    this.items[index].quality < this.MAX_QUALITY;
+  isQualityBelowThreshold = (item: Item): boolean =>
+    item.quality < this.MAX_QUALITY;
+
+  isQualityAboveThreshold = (item: Item): boolean =>
+    item.quality > this.MIN_QUALITY;
 
   operateOnQuality(
-    currentItemIndex: number,
+    item: Item,
     delta: number,
-    predicate: (index: number) => boolean
+    predicate: (item: Item) => boolean
   ): void {
-    if (predicate(currentItemIndex)) {
-      this.items[currentItemIndex].quality += delta;
+    if (predicate(item)) {
+      item.quality += delta;
+    }
+  }
+
+  handleBackstagePass(item: Item) {
+    if (item.quality < this.MAX_QUALITY) {
+      item.quality++;
+
+      if (item.sellIn <= this.TEN_DAYS_TO_CONCERT) {
+        this.operateOnQuality(item, 1, this.isQualityBelowThreshold);
+      }
+      if (item.sellIn <= this.FIVE_DAYS_TO_CONCERT) {
+        this.operateOnQuality(item, 1, this.isQualityBelowThreshold);
+      }
     }
   }
 
   updateQuality() {
-    for (let i = 0; i < this.items.length; i++) {
-      if (this.items[i].name == this.SULFURAS) {
-        continue;
-      }
-      if (
-        this.items[i].name != this.AGED_BRIE &&
-        this.items[i].name != this.BACKSTAGE_PASS
-      ) {
-        if (this.items[i].quality > 0) {
-          this.items[i].quality--;
-        }
-      } else {
-        if (this.items[i].quality < this.MAX_QUALITY) {
-          this.items[i].quality++;
-          if (this.items[i].name == this.BACKSTAGE_PASS) {
-            if (this.items[i].sellIn <= this.MAX_DAYS_TO_CONCERT) {
-              // TODO: pass additional param to operateOnQuality -> this.items[currentItemIndex].quality < this.MAX_QUALITY
-              this.operateOnQuality(i, 1, this.isQualityBelowThreshold);
-            }
-            if (this.items[i].sellIn <= this.MAX_DAYS_TO_CONCERT_2) {
-              this.operateOnQuality(i, 1, this.isQualityBelowThreshold);
-            }
-          }
-        }
-      }
-      this.items[i].sellIn--;
+    this.items.forEach((item) => {
+      switch (item.name) {
+        case this.SULFURAS:
+          return;
 
-      if (this.items[i].sellIn < 0) {
-        if (this.items[i].name == this.BACKSTAGE_PASS) {
-          this.items[i].quality = 0;
-        }
-
-        if (this.items[i].name != this.AGED_BRIE) {
-          if (this.items[i].name != this.BACKSTAGE_PASS) {
-            if (this.items[i].quality > 0) {
-              this.items[i].quality--;
-            }
+        case this.AGED_BRIE:
+          this.operateOnQuality(item, 1, this.isQualityBelowThreshold);
+          item.sellIn--;
+          if (item.sellIn < 0) {
+            this.operateOnQuality(item, 1, this.isQualityBelowThreshold);
           }
-        } else {
-          this.operateOnQuality(i, 1, this.isQualityBelowThreshold);
-        }
+          break;
+
+        case this.BACKSTAGE_PASS:
+          this.handleBackstagePass(item);
+          item.sellIn--;
+          if (item.sellIn < 0) {
+            item.quality = 0;
+          }
+          break;
+
+        default:
+          this.operateOnQuality(item, -1, this.isQualityAboveThreshold);
+          item.sellIn--;
+          if (item.sellIn < 0) {
+            this.operateOnQuality(item, -1, this.isQualityAboveThreshold);
+          }
+          break;
       }
-    }
+    });
 
     return this.items;
   }
