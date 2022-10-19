@@ -1,14 +1,15 @@
-export class Item {
-  name: string;
-  sellIn: number;
-  quality: number;
+import { Item } from "./item";
 
-  constructor(name, sellIn, quality) {
-    this.name = name;
-    this.sellIn = sellIn;
-    this.quality = quality;
-  }
+enum ItemType {
+  SULFURAS = "Sulfuras, Hand of Ragnaros",
+  AGED_BRIE = "Aged Brie",
+  BACKSTAGE_PASS = "Backstage passes to a TAFKAL80ETC concert",
 }
+
+// TODO create Item factory so that if we want to add conjured items, we want to follow open/closed principle
+// call item factory on array of items passed into GR constructor.
+
+// OR have factory in Item constructor?
 
 export class GildedRose {
   items: Array<Item>;
@@ -16,10 +17,6 @@ export class GildedRose {
   constructor(items = [] as Array<Item>) {
     this.items = items;
   }
-
-  private readonly AGED_BRIE = "Aged Brie";
-  private readonly BACKSTAGE_PASS = "Backstage passes to a TAFKAL80ETC concert";
-  private readonly SULFURAS = "Sulfuras, Hand of Ragnaros";
 
   private readonly MAX_QUALITY = 50;
   private readonly MIN_QUALITY = 0;
@@ -32,13 +29,15 @@ export class GildedRose {
   isQualityAboveThreshold = (item: Item): boolean =>
     item.quality > this.MIN_QUALITY;
 
-  operateOnQuality(
-    item: Item,
-    delta: number,
-    predicate: (item: Item) => boolean
-  ): void {
-    if (predicate(item)) {
-      item.quality += delta;
+  safeIncrement(item: Item) {
+    if (this.isQualityBelowThreshold(item)) {
+      item.quality++;
+    }
+  }
+
+  safeDecrement(item: Item) {
+    if (this.isQualityAboveThreshold(item)) {
+      item.quality--;
     }
   }
 
@@ -47,10 +46,10 @@ export class GildedRose {
       item.quality++;
 
       if (item.sellIn <= this.TEN_DAYS_TO_CONCERT) {
-        this.operateOnQuality(item, 1, this.isQualityBelowThreshold);
+        this.safeIncrement(item);
       }
       if (item.sellIn <= this.FIVE_DAYS_TO_CONCERT) {
-        this.operateOnQuality(item, 1, this.isQualityBelowThreshold);
+        this.safeIncrement(item);
       }
     }
   }
@@ -58,18 +57,18 @@ export class GildedRose {
   updateQuality() {
     this.items.forEach((item) => {
       switch (item.name) {
-        case this.SULFURAS:
+        case ItemType.SULFURAS:
           return;
 
-        case this.AGED_BRIE:
-          this.operateOnQuality(item, 1, this.isQualityBelowThreshold);
+        case ItemType.AGED_BRIE:
+          this.safeIncrement(item);
           item.sellIn--;
           if (item.sellIn < 0) {
-            this.operateOnQuality(item, 1, this.isQualityBelowThreshold);
+            this.safeIncrement(item);
           }
           break;
 
-        case this.BACKSTAGE_PASS:
+        case ItemType.BACKSTAGE_PASS:
           this.handleBackstagePass(item);
           item.sellIn--;
           if (item.sellIn < 0) {
@@ -78,10 +77,10 @@ export class GildedRose {
           break;
 
         default:
-          this.operateOnQuality(item, -1, this.isQualityAboveThreshold);
+          this.safeDecrement(item);
           item.sellIn--;
           if (item.sellIn < 0) {
-            this.operateOnQuality(item, -1, this.isQualityAboveThreshold);
+            this.safeDecrement(item);
           }
           break;
       }

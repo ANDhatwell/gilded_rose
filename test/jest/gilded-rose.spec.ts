@@ -1,4 +1,5 @@
-import { Item, GildedRose } from "@/gilded-rose";
+import { GildedRose } from "../../app/gilded-rose";
+import { Item } from "../../app/item";
 import { readFileSync } from "fs";
 import path from "path";
 
